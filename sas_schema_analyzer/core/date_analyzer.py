@@ -15,6 +15,15 @@ class DateFormatAnalyzer:
     """Class to handle robust date format detection and partial date analysis"""
     
     def __init__(self):
+        self._date_label_pattern = re.compile(
+            r'(?<!\w)(date|datetime|time|timestamp|dob|birth|dt|d/t)(?!\w)',
+            re.IGNORECASE,
+        )
+        self._date_name_pattern = re.compile(
+            r'(DTC$|DT$|DATE$|DATETIME$|TIME$|TM$|_DTC$|_DT$|_DATE$|_DATETIME$|_TIME$)',
+            re.IGNORECASE,
+        )
+
         # Define placeholder patterns
         self.year_placeholder_patterns = ['0000', 'YYYY', 'UNKNOWN', 'UNK', 'UK', '----', 'XXXX']
         self.month_placeholder_patterns = ['00', 'MM', 'UNKNOWN', 'UNK', 'UK', '--', 'XX', 'XXX']
@@ -304,3 +313,16 @@ class DateFormatAnalyzer:
         date_value_evidence = date_pattern_count / len(sample_values) > 0.5 if len(sample_values) > 0 else False
         
         return date_name_evidence or date_value_evidence
+
+    def has_date_metadata_evidence(self, col_name: Optional[str], col_label: Optional[str]) -> bool:
+        """Return True when column metadata indicates the field is date-related.
+
+        Labels take precedence over names so a non-date label suppresses false
+        positives from date-like numeric values such as year-style identifiers.
+        """
+        label_text = str(col_label).strip() if col_label is not None else ''
+        if label_text:
+            return bool(self._date_label_pattern.search(label_text))
+
+        name_text = str(col_name).strip() if col_name is not None else ''
+        return bool(self._date_name_pattern.search(name_text))

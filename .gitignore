@@ -31,3 +31,7 @@ Desktop.ini
 # Project-specific: do not commit SAS data files
 *.sas7bdat
 *.sas7bcat
+*.zip
+
+# data files
+isdb/

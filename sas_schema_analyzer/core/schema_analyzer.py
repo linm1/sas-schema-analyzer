@@ -113,9 +113,10 @@ class SasSchemaAnalyzer:
             # Analyze each column
             for col_name in df.columns:
                 unique_count = int(nunique_counts[col_name])
+                column_label = meta.column_names_to_labels.get(col_name, None)
                 col_info = {
                     "name": col_name,
-                    "label": meta.column_names_to_labels.get(col_name, None),
+                    "label": column_label,
                     "unique_count": unique_count,
                 }
 
@@ -123,9 +124,10 @@ class SasSchemaAnalyzer:
                 col_info["sas_data_type"] = self.type_analyzer.get_sas_data_type(col_name, df, meta, self.debug)
 
                 # Date analysis
-                date_analysis = self.date_analyzer.analyze_date_series(df[col_name])
-                if date_analysis.get("is_date", False):
-                    col_info["date_format_analysis"] = date_analysis
+                if self.date_analyzer.has_date_metadata_evidence(col_name, column_label):
+                    date_analysis = self.date_analyzer.analyze_date_series(df[col_name])
+                    if date_analysis.get("is_date", False):
+                        col_info["date_format_analysis"] = date_analysis
 
                 # Code list detection (for both character and numeric)
                 # Only consider if not an ID-like column and unique count is low
