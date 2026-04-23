@@ -17,6 +17,34 @@ from .type_analyzer import DataTypeAnalyzer
 _SAS_FILE_GLOB = "*.sas7bdat"
 _SAS_FILE_EXT = ".sas7bdat"
 
+# Encodings tried in order when pyreadstat's default UTF-8 decode of the
+# sas7bdat header/metadata raises UnicodeDecodeError. 'latin1' maps every byte
+# 0x00-0xFF to a Unicode codepoint, so it can never raise — this guarantees the
+# read completes without inspecting any datalines.
+_ENCODING_FALLBACKS: tuple = ("latin1",)
+
+
+def _read_sas7bdat_with_fallback(file_path: str):
+    """Read a sas7bdat file, retrying with byte-safe encodings on UnicodeDecodeError.
+
+    Returns (df, meta, used_encoding). `used_encoding` is None when the library
+    default succeeded, otherwise the fallback name that worked. Non-UnicodeDecodeError
+    exceptions propagate unchanged so the caller's standard error handler reports them.
+    """
+    try:
+        df, meta = pyreadstat.read_sas7bdat(file_path)
+        return df, meta, None
+    except UnicodeDecodeError:
+        last_error = None
+        for enc in _ENCODING_FALLBACKS:
+            try:
+                df, meta = pyreadstat.read_sas7bdat(file_path, encoding=enc)
+                return df, meta, enc
+            except UnicodeDecodeError as e:
+                last_error = e
+                continue
+        raise last_error
+
 
 class SasSchemaAnalyzer:
     """Simplified SAS schema analysis engine"""
@@ -61,8 +89,8 @@ class SasSchemaAnalyzer:
                 await ctx.info(f"Reading SAS file: {os.path.basename(file_path)}")
                 await ctx.report_progress(10, 100, "Reading file...")
             
-            # Read the SAS file
-            df, meta = pyreadstat.read_sas7bdat(file_path)
+            # Read the SAS file (with encoding fallback for non-UTF-8 metadata)
+            df, meta, used_encoding = _read_sas7bdat_with_fallback(file_path)
             
             if ctx:
                 await ctx.report_progress(50, 100, "Analyzing schema...")
@@ -78,6 +106,7 @@ class SasSchemaAnalyzer:
                 "row_count": row_count,
                 "column_count": len(df.columns),
                 "file_label": getattr(meta, 'file_label', None),
+                "used_encoding": used_encoding,
                 "columns": []
             }
 
