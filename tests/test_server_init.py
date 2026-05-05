@@ -12,10 +12,23 @@ All three tests are expected to PASS once the fix is applied.
 
 import ast
 import inspect
+import sys
 from pathlib import Path
+from typing import Optional
 
 import pytest
-from fastmcp import FastMCP
+
+if sys.version_info < (3, 10):
+    pytest.skip(
+        "Server initialization tests require Python 3.10+.",
+        allow_module_level=True,
+    )
+
+fastmcp = pytest.importorskip(
+    "fastmcp",
+    reason="Server initialization tests require fastmcp on Python 3.10+.",
+)
+FastMCP = fastmcp.FastMCP
 
 
 # ---------------------------------------------------------------------------
@@ -25,7 +38,7 @@ from fastmcp import FastMCP
 SERVER_PY = Path(__file__).parent.parent / "sas_schema_analyzer" / "server.py"
 
 
-def _parse_fastmcp_call(source: str) -> ast.Call | None:
+def _parse_fastmcp_call(source: str) -> Optional[ast.Call]:
     """Return the first ast.Call node whose function name is 'FastMCP'."""
     tree = ast.parse(source)
     for node in ast.walk(tree):

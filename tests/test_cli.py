@@ -11,6 +11,7 @@ import asyncio
 import json
 import sys
 from pathlib import Path
+from typing import List, Tuple
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -20,7 +21,7 @@ import pytest
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _invoke_cli(args: list[str], capsys) -> tuple[int, str, str]:
+def _invoke_cli(args: List[str], capsys) -> Tuple[int, str, str]:
     """Call cli.main() with the given sys.argv args, return (exit_code, stdout, stderr)."""
     from sas_schema_analyzer import cli
 
@@ -70,6 +71,28 @@ FAKE_LIST_RESULT = {
 # ---------------------------------------------------------------------------
 
 class TestCliModuleExists:
+    def test_package_import_does_not_import_server(self):
+        """Importing the package must not eagerly import the MCP server."""
+        sys.modules.pop("sas_schema_analyzer.server", None)
+        sys.modules.pop("sas_schema_analyzer", None)
+
+        __import__("sas_schema_analyzer")
+
+        assert "sas_schema_analyzer.server" not in sys.modules
+
+    def test_package_main_reports_missing_fastmcp(self):
+        """Package main() must fail clearly when server-only deps are unavailable."""
+        import sas_schema_analyzer
+
+        missing_dependency = ModuleNotFoundError(
+            "No module named 'fastmcp'",
+            name="fastmcp",
+        )
+
+        with patch("sas_schema_analyzer.import_module", side_effect=missing_dependency):
+            with pytest.raises(SystemExit, match="Python 3\.10\+"):
+                sas_schema_analyzer.main()
+
     def test_cli_module_importable(self):
         """cli.py must exist and be importable."""
         from sas_schema_analyzer import cli  # noqa: F401

@@ -21,10 +21,22 @@ Usage:
     from sas_schema_analyzer.core import SasSchemaAnalyzer
 """
 
+from importlib import import_module
+
 __version__ = "1.1.0"
 __author__ = "SAS Schema Analyzer Team"
 
-# Import main function for console script entry point
-from .server import main
+def main() -> None:
+    try:
+        server_module = import_module(".server", __name__)
+    except ModuleNotFoundError as exc:
+        if exc.name == "fastmcp":
+            raise SystemExit(
+                "sas-schema-analyzer requires fastmcp and Python 3.10+. "
+                "Use sas-schema on Python 3.8/3.9, or install the server on Python 3.10+."
+            ) from exc
+        raise
+
+    server_module.main()
 
 __all__ = ["main"]

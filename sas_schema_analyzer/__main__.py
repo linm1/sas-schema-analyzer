@@ -1,2 +1,3 @@
-from .server import main
+from . import main
+
 main()

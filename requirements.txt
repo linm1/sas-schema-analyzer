@@ -1,7 +1,9 @@
-fastmcp>=0.4.2
-pyreadstat>=1.2.0
-pandas>=2.0.0
-numpy>=1.24.0
+fastmcp>=3.0.0; python_version >= "3.10"
+pyreadstat>=1.2.0,<2
+pandas>=1.5,<2.1; python_version < "3.9"
+pandas>=2.0.0; python_version >= "3.9"
+numpy>=1.21,<1.25; python_version < "3.9"
+numpy>=1.24.0; python_version >= "3.9"
 psutil>=5.9.0
 openpyxl>=3.0.0
 xlrd>=2.0.0
