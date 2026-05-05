@@ -39,11 +39,12 @@ Documentation = "https://github.com/yourusername/sas-schema-analyzer#readme"
 Repository = "https://github.com/yourusername/sas-schema-analyzer.git"
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
 
-[tool.hatch.build.targets.wheel]
-packages = ["sas_schema_analyzer"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["sas_schema_analyzer*"]
 
 [tool.uv]
 dev-dependencies = []
